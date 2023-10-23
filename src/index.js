@@ -12,6 +12,13 @@ function validateData(req, res, next) { //middleare validasi data
   next();
 }
 
+function validateBio(req, res, next) { //middleare validasi data
+  if (!req.body.nama || !req.body.job || !req.body.button) {
+    return response(400, "Data is incomplete", "Validation Error", res);
+  }
+  next();
+}
+
 app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
@@ -20,7 +27,7 @@ app.get("/", (req, res) => {
 
 app.get("/biodata", (req, res) => {
   //mencari spesifik berdasarkan params
-  const sql = "SELECT * FROM tb_siswa";
+  const sql = "SELECT * FROM tb_clsmt";
 
   db.query(sql, (error, result) => {
     if (error) throw error; //untuk memotong jika ada error
@@ -35,6 +42,58 @@ app.get("/biodata/:nisn", (req, res) => {
   db.query(sql, (error, result) => {
     if (error) throw error; //untuk memotong jika ada error
     response(200, result, "succes parsing data", res);
+  });
+});
+
+app.post("/biodata", validateBio,(req, res) => {
+  const { nama, job, button} = req.body;
+  const sql = `INSERT INTO tb_clsmt(id,nama,job,button) VALUES(NULL,'${nama}','${job}','${button}')`;
+
+  db.query(sql, (error, result) => {
+    if (error) response(404, error.sqlMessage, "Error adding data", res); //untuk memotong jika ada error
+
+    if (result?.affectedRows) {
+      const data = {
+        IsSucces: result.affectedRows,
+        Id: result.insertId,
+      };
+      response(200, data, "Adding Data Succes", res);
+    }
+  });
+});
+
+app.put("/biodata", validateBio,(req, res) => {
+  const { namaold, nama, job, button } = req.body;
+  const sql = `UPDATE tb_clsmt SET nama = '${nama}', job = '${job}',button = '${button}' WHERE nama = '${namaold}'`;
+
+  db.query(sql, (error, result) => {
+    if (error) response(404, error.sqlMessage, "Error update data", res); //untuk memotong jika ada error
+
+    if (result?.affectedRows) {
+      const data = {
+        IsSucces: result.affectedRows,
+      };
+      response(200, data, "update Data Succes", res);
+    } else {
+      response(404, "Data Not Found Cuk", "update Data error", res);
+    }
+  });
+});
+app.delete("/biodata", (req, res) => {
+  const { nama } = req.body;
+  const sql = `DELETE FROM tb_clsmt WHERE nama = '${nama}'`;
+
+  db.query(sql, (error, result) => {
+    if (error) response(404, error.sqlMessage, "Error Delete data", res); //untuk memotong jika ada error
+
+    if (result?.affectedRows) {
+      const data = {
+        IsSucces: result.affectedRows,
+      };
+      response(200, data, "Delete Data Succes", res);
+    } else {
+      response(404, "Data Not Found Cuk", "Delete Data error", res);
+    }
   });
 });
 
